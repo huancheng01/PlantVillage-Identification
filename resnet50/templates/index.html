@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>植物图像识别系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" as="style">
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css" as="style">
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --secondary-color: #8BC34A;
+            --accent-color: #2E7D32;
+            --light-bg: #F1F8E9;
+            --dark-text: #333;
+            --light-text: #fff;
+            --border-radius: 8px;
+            --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light-bg);
+            color: var(--dark-text);
+            padding-bottom: 50px;
+        }
+
+        .navbar {
+            background-color: var(--primary-color);
+            box-shadow: var(--box-shadow);
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            color: var(--light-text) !important;
+        }
+
+        .main-container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+
+        .card {
+            border-radius: var(--border-radius);
+            border: none;
+            box-shadow: var(--box-shadow);
+            transition: transform 0.3s ease;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card-header {
+            background-color: var(--primary-color);
+            color: var(--light-text);
+            font-weight: 600;
+            padding: 15px 20px;
+            border-bottom: none;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            padding: 10px 20px;
+            font-weight: 600;
+            border-radius: var(--border-radius);
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover, .btn-primary:focus {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .upload-area {
+            border: 2px dashed var(--secondary-color);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            text-align: center;
+            background-color: rgba(139, 195, 74, 0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .upload-area:hover {
+            background-color: rgba(139, 195, 74, 0.2);
+        }
+
+        .upload-icon {
+            font-size: 2.5rem;
+            color: var(--secondary-color);
+            margin-bottom: 10px;
+        }
+
+        .image-container {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+            background-color: #f5f5f5;
+            border-radius: var(--border-radius);
+            min-height: 250px;
+        }
+
+        .image-preview {
+            max-width: 100%;
+            max-height: 250px;
+            object-fit: contain;
+            display: none;
+        }
+
+        .results-table {
+            width: 100%;
+        }
+
+        .results-table th {
+            background-color: var(--primary-color);
+            color: var(--light-text);
+            padding: 12px 15px;
+            text-align: left;
+        }
+
+        .results-table tr {
+            transition: background-color 0.3s ease;
+        }
+
+        .results-table tr:nth-child(even) {
+            background-color: rgba(139, 195, 74, 0.1);
+        }
+
+        .results-table tr:hover {
+            background-color: rgba(139, 195, 74, 0.2);
+        }
+
+        .results-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .loading {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(76, 175, 80, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .no-results {
+            padding: 40px 0;
+            text-align: center;
+            color: #757575;
+            font-style: italic;
+        }
+
+        .result-category {
+            font-weight: 600;
+            color: var(--accent-color);
+        }
+
+        .placeholder-text {
+            color: #9E9E9E;
+            text-align: center;
+            padding: 15px;
+        }
+
+        #resultsList {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 10px;
+            }
+
+            .card-deck {
+                flex-direction: column;
+            }
+        }
+
+        /* 确保上传区域和图片预览区域卡片高度相同 */
+        @media (min-width: 768px) {
+            .row {
+                display: flex;
+            }
+            .row > div[class^="col"] {
+                display: flex;
+            }
+            .row > div[class^="col"] > .card {
+                width: 100%;
+                display: flex;
+                flex-direction: column;
+            }
+            .card-body {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+            }
+            .upload-area {
+                flex: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand animate__animated animate__fadeIn" href="#">
+                <i class="fas fa-leaf me-2"></i>植物病害识别系统
+            </a>
+        </div>
+    </nav>
+
+    <!-- 主容器 -->
+    <div class="container main-container">
+        <div class="row">
+            <!-- 上传和识别区域 -->
+            <div class="col-md-6">
+                <div class="card animate__animated animate__fadeInLeft">
+                    <div class="card-header">
+                        <i class="fas fa-upload me-2"></i>上传图片
+                    </div>
+                    <div class="card-body">
+                        <div class="upload-area" id="uploadArea">
+                            <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                            <h5 class="text-center">点击或拖拽图片到此处上传</h5>
+                            <p class="text-muted text-center">支持JPG, PNG, JPEG格式</p>
+                            <input type="file" id="imageInput" accept="image/*" style="display: none;">
+                        </div>
+                        <div class="loading mt-2 text-center" id="loading" style="display: none; margin-top: 2.5rem !important;">
+                            <div style="display: flex; align-items: center; justify-content: center;">
+                                <div class="loading-spinner me-2" style="width: 25px; height: 25px;"></div>
+                                <p style="margin-bottom: 0;">正在识别中，请稍候...</p>
+                            </div>
+                        </div>
+                        <div class="mt-3 text-center">
+                            <button id="recognizeBtn" class="btn btn-primary" disabled>
+                                <i class="fas fa-search me-2"></i>开始识别
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 图片预览区域 -->
+            <div class="col-md-6">
+                <div class="card animate__animated animate__fadeInRight">
+                    <div class="card-header">
+                        <i class="fas fa-image me-2"></i>图片预览
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="image-container" style="min-height: 280px;">
+                            <div class="placeholder-text" id="previewPlaceholder">
+                                <i class="fas fa-images fa-2x mb-2" style="color: #bdbdbd;"></i>
+                                <p>上传图片后将显示在此处</p>
+                            </div>
+                            <img id="imagePreview" class="image-preview" src="" alt="图片预览">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 识别结果区域 -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card animate__animated animate__fadeInUp">
+                    <div class="card-header">
+                        <i class="fas fa-list-alt me-2"></i>识别结果
+                    </div>
+                    <div class="card-body">
+                        <div id="noResults" class="no-results">
+                            <i class="fas fa-info-circle me-2"></i>请上传并识别图片以查看结果
+                        </div>
+                        <div id="resultsList">
+                            <div class="table-responsive">
+                                <table class="results-table">
+                                    <thead>
+                                        <tr>
+                                            <th>序号</th>
+                                            <th>类别</th>
+                                            <th>置信度</th>
+                                            <th>识别时间</th>
+                                            <th>识别时长</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="resultsTableBody">
+                                        <!-- 结果将通过JavaScript动态添加 -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 脚本 -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" defer></script>
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadArea = document.getElementById('uploadArea');
+            const imageInput = document.getElementById('imageInput');
+            const imagePreview = document.getElementById('imagePreview');
+            const previewPlaceholder = document.getElementById('previewPlaceholder');
+            const recognizeBtn = document.getElementById('recognizeBtn');
+            const loading = document.getElementById('loading');
+            const noResults = document.getElementById('noResults');
+            const resultsList = document.getElementById('resultsList');
+            const resultsTableBody = document.getElementById('resultsTableBody');
+
+            // 上传区域点击事件
+            uploadArea.addEventListener('click', function() {
+                imageInput.click();
+            });
+
+            // 拖拽文件功能
+            uploadArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                uploadArea.style.backgroundColor = 'rgba(139, 195, 74, 0.3)';
+            });
+
+            uploadArea.addEventListener('dragleave', function() {
+                uploadArea.style.backgroundColor = 'rgba(139, 195, 74, 0.1)';
+            });
+
+            uploadArea.addEventListener('drop', function(e) {
+                e.preventDefault();
+                uploadArea.style.backgroundColor = 'rgba(139, 195, 74, 0.1)';
+
+                if (e.dataTransfer.files.length > 0) {
+                    imageInput.files = e.dataTransfer.files;
+                    handleImageUpload(e.dataTransfer.files[0]);
+                }
+            });
+
+            // 图片选择事件
+            imageInput.addEventListener('change', function() {
+                if (this.files && this.files[0]) {
+                    handleImageUpload(this.files[0]);
+                }
+            });
+
+            // 处理图片上传
+            function handleImageUpload(file) {
+                const reader = new FileReader();
+
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                    previewPlaceholder.style.display = 'none';
+                    recognizeBtn.disabled = false;
+                }
+
+                reader.readAsDataURL(file);
+            }
+
+            // 识别按钮点击事件
+            recognizeBtn.addEventListener('click', function() {
+                // 显示加载状态
+                loading.style.display = 'block';
+                recognizeBtn.disabled = true;
+
+                // 获取选中的图片文件
+                const file = imageInput.files[0];
+                if (!file) {
+                    alert('请先选择一张图片');
+                    loading.style.display = 'none';
+                    recognizeBtn.disabled = false;
+                    return;
+                }
+
+                // 创建FormData对象发送文件
+                const formData = new FormData();
+                formData.append('file', file);
+
+                // 记录开始时间
+                const startTime = new Date();
+
+                // 定义可能的API端点
+                const apiEndpoints = [
+                    '/predict',                        // 相对路径
+                    'http://localhost:7777/predict',   // 显式本地主机路径
+                    'http://127.0.0.1:7777/predict',    // 使用IP地址
+                    'http://192.168.31.100:7777/predict'  // 使用IP地址
+                ];
+                
+                // 尝试依次使用不同的API端点
+                let currentEndpointIndex = 0;
+                
+                function tryApiEndpoint() {
+                    if (currentEndpointIndex >= apiEndpoints.length) {
+                        // 所有端点都尝试失败，显示错误信息并提供调试信息
+                        console.error('所有API端点连接失败');
+                        alert('无法连接到识别服务器。请确保Flask服务器正在运行，并检查控制台以获取更多信息。');
+                        
+                        // 显示一些调试信息
+                        console.log('调试信息:');
+                        console.log('1. 请确保您的Flask服务器在端口5000上运行');
+                        console.log('2. 如果Flask服务器运行在不同端口，请相应修改前端代码');
+                        console.log('3. 检查Flask服务器的CORS设置是否正确');
+                        console.log('4. 如果在本地开发，尝试使用相同的域名/端口提供前端和后端服务');
+                        
+                        // 隐藏加载状态
+                        loading.style.display = 'none';
+                        recognizeBtn.disabled = false;
+                        return;
+                    }
+                    
+                    const endpoint = apiEndpoints[currentEndpointIndex];
+                    console.log(`尝试连接到API端点: ${endpoint}`);
+                    
+                    fetch(endpoint, {
+                        method: 'POST',
+                        body: formData,
+                        // 添加额外的fetch选项，可能有助于解决问题
+                        mode: 'cors',  // 显式指定cors模式
+                        cache: 'no-cache',
+                        credentials: 'same-origin'
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`图片识别请求失败，状态码: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('识别成功!', data);
+                        // 计算识别时长
+                        const endTime = new Date();
+                        const duration = ((endTime - startTime) / 1000).toFixed(1);
+                        
+                        // 显示识别结果
+                        displayResults(data, duration);
+                        
+                        // 隐藏加载状态
+                        loading.style.display = 'none';
+                        recognizeBtn.disabled = false;
+                    })
+                    .catch(error => {
+                        console.error(`尝试端点 ${endpoint} 失败:`, error);
+                        // 尝试下一个端点
+                        currentEndpointIndex++;
+                        tryApiEndpoint();
+                    });
+                }
+                
+                // 开始尝试连接
+                tryApiEndpoint();
+            });
+
+            // 显示结果的函数
+            function displayResults(data, duration) {
+                // 隐藏"无结果"提示，显示结果列表
+                noResults.style.display = 'none';
+                resultsList.style.display = 'block';
+                
+                // 清空之前的结果
+                resultsTableBody.innerHTML = '';
+                
+                // 处理返回的预测结果
+                if (data && data.class_name) {
+                    const row = document.createElement('tr');
+                    const currentTime = getCurrentTime();
+                    const confidence = (data.confidence * 100).toFixed(2) + '%';
+                    
+                    row.innerHTML = `
+                        <td>1</td>
+                        <td class="result-category">${data.class_name}</td>
+                        <td>${confidence}</td>
+                        <td>${currentTime}</td>
+                        <td>${duration}秒</td>
+                    `;
+                    resultsTableBody.appendChild(row);
+                    
+                    // 添加动画效果
+                    row.classList.add('animate__animated', 'animate__fadeIn');
+                } else {
+                    // 没有预测结果时显示一条消息
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td colspan="5" class="text-center">未能识别出植物类别，请尝试上传其他图片</td>
+                    `;
+                    resultsTableBody.appendChild(row);
+                }
+            }
+
+            // 获取当前时间的辅助函数
+            function getCurrentTime() {
+                const now = new Date();
+                return now.toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+            }
+        });
+    </script>
+</body>
+</html> 
